@@ -28,15 +28,16 @@ abstract class AbstractCentaurTestCaseSpec(cromwellBackends: List[String], cromw
   SuccessReporters.getClass
 
   private def testCases(baseFile: File): List[CentaurTestCase] = {
-    val successfullTests = TestsReportsSerializer.read(CentaurConfig.testsReports)
-    val cromwellVer = VersionUtil.getVersion("cromwell")
-    val testNamesSet = successfullTests.testsToSkip(cromwellVer)
+    val testsReports = TestsReportsSerializer.read(CentaurConfig.testsReportsPath)
+    val cromwellVer = VersionUtil.getVersion(CentaurConfig.cromwellName)
+    val skipPassedTests = CentaurConfig.skipPassedTests
+    val passedTestsNamesSet = if (skipPassedTests) testsReports.testsToSkip(cromwellVer) else Set.empty[String]
 
     val files = baseFile.list.filter(_.isRegularFile).toList
     val testCases = files.traverse(CentaurTestCase.fromFile(cromwellTracker))
 
     testCases match {
-      case Valid(l) => l.filterNot(x => testNamesSet.contains(getTestName(x)))
+      case Valid(l) => l.filterNot(x => passedTestsNamesSet.contains(getTestName(x)))
       case Invalid(e) => throw new IllegalStateException("\n" + e.toList.mkString("\n") + "\n")
     }
   }
@@ -192,9 +193,9 @@ abstract class AbstractCentaurTestCaseSpec(cromwellBackends: List[String], cromw
   }
 
   private def logTestSuccess(testName: String): Unit = {
-    val testsReport = TestsReportsSerializer.read(CentaurConfig.testsReports)
+    val testsReport = TestsReportsSerializer.read(CentaurConfig.testsReportsPath)
     testsReport.addSuccessfulTest(testName, VersionUtil.getVersion("cromwell"))
-    TestsReportsSerializer.write(CentaurConfig.testsReports, testsReport)
+    TestsReportsSerializer.write(CentaurConfig.testsReportsPath, testsReport)
   }
 
 }

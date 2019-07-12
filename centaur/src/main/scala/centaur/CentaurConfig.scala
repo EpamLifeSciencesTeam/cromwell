@@ -48,6 +48,7 @@ case class ManagedCromwellServer(preRestart: CromwellConfiguration, postRestart:
 }
 
 object CentaurConfig {
+  val cromwellName = "cromwell"
   lazy val conf = ConfigFactory.load().getConfig("centaur")
   
   lazy val runMode = CentaurRunMode(conf)
@@ -58,14 +59,14 @@ object CentaurConfig {
   lazy val metadataConsistencyTimeout = conf.getDuration("metadataConsistencyTimeout").toScala
 
   lazy val standardTestCasePath = Paths.get(conf.getString("standardTestCasePath"))
-
+  lazy val skipPassedTests = conf.getBoolean("skipPassedTests")
   // If provided, any tests will be appended to the tests in standardTestCasePath
   lazy val optionalTestPath: Option[Path] = conf.get[Option[Path]]("optionalTestPath") valueOrElse None
   // If provided, the token will become the default value for the workflow option "refresh_token"
   lazy val optionalTokenPath: Option[Path] = conf.get[Option[Path]]("optionalTokenPath") valueOrElse None
   lazy val optionalToken: Option[String] = optionalTokenPath.map(File(_).contentAsString.trim)
 
-  lazy val testsReports: String = "testsReports.dat"
+  lazy val testsReportsPath: String = "testsReports.dat"
 
   implicit class EnhancedJavaDuration(val javaDuration: java.time.Duration) extends AnyVal {
     def toScala: FiniteDuration = FiniteDuration(javaDuration.toMillis, TimeUnit.MILLISECONDS)
