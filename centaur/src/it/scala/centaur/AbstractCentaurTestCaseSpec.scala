@@ -31,13 +31,13 @@ abstract class AbstractCentaurTestCaseSpec(cromwellBackends: List[String], cromw
     val testsReports = TestsReportsSerializer.read(CentaurConfig.testsReportsPath)
     val cromwellVer = VersionUtil.getVersion(CentaurConfig.cromwellName)
     val skipPassedTests = CentaurConfig.skipPassedTests
-    val passedTestsNamesSet = if (skipPassedTests) testsReports.testsToSkip(cromwellVer) else Set.empty[String]
+    val passedTestsNamesSet = testsReports.testsToSkip(cromwellVer)
 
     val files = baseFile.list.filter(_.isRegularFile).toList
     val testCases = files.traverse(CentaurTestCase.fromFile(cromwellTracker))
 
     testCases match {
-      case Valid(l) => l.filterNot(x => passedTestsNamesSet.contains(getTestName(x)))
+      case Valid(l) => if (skipPassedTests) l.filterNot(x => passedTestsNamesSet contains getTestName(x)) else l
       case Invalid(e) => throw new IllegalStateException("\n" + e.toList.mkString("\n") + "\n")
     }
   }

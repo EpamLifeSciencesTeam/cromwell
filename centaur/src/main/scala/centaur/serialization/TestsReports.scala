@@ -1,18 +1,17 @@
 package centaur.serialization
 
-import java.io.{FileInputStream, FileOutputStream}
+import java.io.{BufferedWriter, FileNotFoundException, FileWriter}
 
-import com.esotericsoftware.kryo.io.{Input, Output}
-import com.twitter.chill.ScalaKryoInstantiator
 import org.slf4j.LoggerFactory
 
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 /**
   * This class contains information about last version in which corresponding integration test was successfully run
-  * @param testCasesRuns  key is a test name; value is a version of Cromwell, in which this test passed last time
+  *
+  * @param testCasesRuns key is a test name; value is a version of Cromwell, in which this test passed last time
   */
 case class TestsReports(testCasesRuns: TrieMap[String, String]) {
   def addSuccessfulTest(testName: String, version: String): Option[String] =
@@ -23,39 +22,40 @@ case class TestsReports(testCasesRuns: TrieMap[String, String]) {
 }
 
 /**
-  * Serializer for {@link centaur.serialization.TestsReports} class. Based on Kryo, uses twitter's chill for Scala collections serialization
-  * @see <a href="https://github.com/twitter/chill">chill</a>
+  * Serializer for {@link centaur.serialization.TestsReports} class. Based on Circe, serializes to JSON
   */
 object TestsReportsSerializer {
   private val logger = LoggerFactory.getLogger(TestsReportsSerializer.getClass)
-  private val instantiator = new ScalaKryoInstantiator
-  instantiator.setRegistrationRequired(false)
-  private val kryo = instantiator.newKryo()
 
   def read(fileName: String): TestsReports = {
+    import io.circe.parser._
+
     val obj = readFile(fileName) {
-      case Success(i) => Option(kryo.readObject(i, classOf[mutable.HashMap[String, String]]))
-      case Failure(ex) => logger.error("An error occurred while trying to deserialize object", ex); None
+      case Success(res) => decode[TrieMap[String, String]](res.getLines.mkString) match {
+        case Left(ex) => logger.error(s"Failed to decode string: ${res.getLines.mkString}", ex); None
+        case Right(v) => Some(v)
+      }
+      case Failure(_: FileNotFoundException) => logger.warn("File {} was not found", fileName); None
+      case Failure(ex) => logger.error("Failed to read file", ex); None
     }
 
     obj match {
       case None => TestsReports(TrieMap.empty[String, String])
-      //Unfortunately, chill does not supports TrieMap serialization/deserialization out of box
-      //Therefore, this 'hack' to convert HashMap to right type is used
-      case Some(map) => TestsReports(TrieMap.empty[String, String] ++ map)
+      case Some(m) => logger.info("Successfully deserialized object {}", m); TestsReports(m)
     }
   }
 
   def write(fileName: String, testsReports: TestsReports): Unit = {
-    writeFile(fileName) {
-      case Success(o) => kryo.writeObject(o, testsReports.testCasesRuns)
-      case Failure(ex) => logger.error("An error occurred while trying to serialize object", ex)
+    import io.circe.syntax._
+    val jsonString = testsReports.testCasesRuns.asJson.spaces2
+    writeFile(fileName, jsonString) {
+      case Success(_) => logger.info("Successfully saved object {}", testsReports)
+      case Failure(ex) => logger.error(s"Failed to serialize object: $testsReports", ex)
     }
   }
 
-  def readFile[T](filePath: String)(func: Try[Input] => T): T = {
-    val fileInputStream = Try(new FileInputStream(filePath))
-    val input = fileInputStream.map(x => new Input(x))
+  private def readFile[T](filePath: String)(func: Try[Source] => T): T = {
+    val input = Try(Source.fromFile(filePath))
     try {
       func(input)
     } finally {
@@ -63,11 +63,12 @@ object TestsReportsSerializer {
     }
   }
 
-  def writeFile[T](filePath: String)(func: Try[Output] => T): T = {
-    val fileOutputStream = Try(new FileOutputStream(filePath))
-    val output = fileOutputStream.map(x => new Output(x))
+  private def writeFile[T](filePath: String, json: String)(func: Try[Unit] => T): T = {
+    val fileWriter = Try(new FileWriter(filePath))
+    val output = fileWriter.map(x => new BufferedWriter(x))
+    lazy val writeFunc = output.map(x => x.write(json))
     try {
-      func(output)
+      func(writeFunc)
     } finally {
       output.foreach(x => x.close())
     }

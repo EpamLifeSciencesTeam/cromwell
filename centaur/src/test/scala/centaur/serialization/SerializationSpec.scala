@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scala.collection.concurrent.TrieMap
 
 class SerializationSpec extends FlatSpec with Matchers {
-  private val filePath: String = "centaur/src/test/resources/testSerialize.txt"
+  private val filePath: String = "centaur/src/test/resources/testSerialize.json"
 
   behavior of "TestsReports"
   it should "correctly serialize and deserialize data" in {
