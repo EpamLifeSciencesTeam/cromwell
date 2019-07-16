@@ -2,22 +2,31 @@ package centaur.serialization
 
 import java.io.{BufferedWriter, FileNotFoundException, FileWriter}
 
+import centaur.serialization.TestsReports.{CromwellVersion, TestName, TestReports}
 import org.slf4j.LoggerFactory
 
 import scala.collection.concurrent.TrieMap
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
+
+object TestsReports {
+  type TestName = String
+  type CromwellVersion = String
+  type TestReports = TrieMap[TestName, CromwellVersion]
+
+  def apply(): TestsReports = new TestsReports(TrieMap.empty[TestName, CromwellVersion])
+}
 
 /**
   * This class contains information about last version in which corresponding integration test was successfully run
   *
   * @param testCasesRuns key is a test name; value is a version of Cromwell, in which this test passed last time
   */
-case class TestsReports(testCasesRuns: TrieMap[String, String]) {
-  def addSuccessfulTest(testName: String, version: String): Option[String] =
+case class TestsReports(testCasesRuns: TestReports) {
+  def addSuccessfulTest(testName: TestName, version: CromwellVersion): Option[String] =
     testCasesRuns.put(testName, version)
 
-  def testsToSkip(version: String): Set[String] =
+  def testsToSkip(version: CromwellVersion): Set[TestName] =
     testCasesRuns.filter(_._2 == version).keys.toSet
 }
 
@@ -25,52 +34,36 @@ case class TestsReports(testCasesRuns: TrieMap[String, String]) {
   * Serializer for {@link centaur.serialization.TestsReports} class. Based on Circe, serializes to JSON
   */
 object TestsReportsSerializer {
+  import io.circe.generic.auto._
+
   private val logger = LoggerFactory.getLogger(TestsReportsSerializer.getClass)
 
   def read(fileName: String): TestsReports = {
     import io.circe.parser._
 
-    val obj = readFile(fileName) {
-      case Success(res) => decode[TrieMap[String, String]](res.getLines.mkString) match {
-        case Left(ex) => logger.error(s"Failed to decode string: ${res.getLines.mkString}", ex); None
-        case Right(v) => Some(v)
-      }
-      case Failure(_: FileNotFoundException) => logger.warn("File {} was not found", fileName); None
-      case Failure(ex) => logger.error("Failed to read file", ex); None
-    }
-
-    obj match {
-      case None => TestsReports(TrieMap.empty[String, String])
-      case Some(m) => logger.info("Successfully deserialized object {}", m); TestsReports(m)
+    using(Try(Source.fromFile(fileName))) { src =>
+      src.map(x => decode[TestsReports](x.getLines.mkString)).fold(
+        x => { log(x, "read"); TestsReports() },
+        y => y.getOrElse(TestsReports()))
     }
   }
 
   def write(fileName: String, testsReports: TestsReports): Unit = {
     import io.circe.syntax._
-    val jsonString = testsReports.testCasesRuns.asJson.spaces2
-    writeFile(fileName, jsonString) {
-      case Success(_) => logger.info("Successfully saved object {}", testsReports)
-      case Failure(ex) => logger.error(s"Failed to serialize object: $testsReports", ex)
+
+    val jsonString = testsReports.asJson.spaces2
+    using(Try(new BufferedWriter(new FileWriter(fileName)))) { wrt =>
+      wrt.fold(x => log(x, "write"), _.write(jsonString))
     }
   }
 
-  private def readFile[T](filePath: String)(func: Try[Source] => T): T = {
-    val input = Try(Source.fromFile(filePath))
-    try {
-      func(input)
-    } finally {
-      input.foreach(x => x.close())
-    }
-  }
+  private def using[R <: AutoCloseable, A](r: Try[R])(f: Try[R] => A): A = try f(r) finally r.foreach(_.close)
 
-  private def writeFile[T](filePath: String, json: String)(func: Try[Unit] => T): T = {
-    val fileWriter = Try(new FileWriter(filePath))
-    val output = fileWriter.map(x => new BufferedWriter(x))
-    lazy val writeFunc = output.map(x => x.write(json))
-    try {
-      func(writeFunc)
-    } finally {
-      output.foreach(x => x.close())
+  private def log[E <: Throwable](ex: E, str: String): Unit = {
+    ex match {
+      case e: FileNotFoundException if str == "read" => logger.warn(s"Failed to $str object, it will be created", e)
+      case _ => logger.error(s"Failed to $str object", ex)
     }
   }
 }
+
