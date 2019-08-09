@@ -1,0 +1,20 @@
+name: cwl_input_json
+testFormat: workflowsuccess
+workflowType: WDL
+workflowRoot: my_test_case-1
+backends: [Papiv2]
+tags: [copy_false]
+
+
+files {
+    workflow: copy_files_wdl.wdl
+    options: aws_cromwell_options.json
+    workflow: and_another_one.wdl
+}
+
+metadata {
+  workflowName: copy_files_wdl
+  status: Succeeded
+  workflowName: and_another_one
+  status: Succeeded
+}

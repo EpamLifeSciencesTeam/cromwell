@@ -1,0 +1,16 @@
+name: copy_files_aws_relative
+testFormat: workflowsuccess
+backends: [AWSBatch]
+workflowType: WDL
+tags: [copyTrue]
+
+
+files {
+    workflow: copy_tests/echo_string.wdl
+    workflow: copy_tests/copy_files_aws_relative_path/steps/check_copied_aws_relative.wdl
+    options: copy_tests/copy_files_aws_relative_path/aws_cromwell_options.json
+}
+
+metadata {
+    status: Succeeded
+}
