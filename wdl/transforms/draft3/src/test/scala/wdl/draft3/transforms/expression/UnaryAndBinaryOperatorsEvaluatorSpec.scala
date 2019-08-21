@@ -10,8 +10,8 @@ import wdl.model.draft3.graph.expression.EvaluatedValue
 import wdl.model.draft3.graph.expression.ValueEvaluator.ops._
 import wdl.model.draft3.graph.expression.TypeEvaluator.ops._
 import wom.expression.NoIoFunctionSet
-import wom.types.{WomBooleanType, WomIntegerType, WomType}
-import wom.values.{WomBoolean, WomInteger, WomValue}
+import wom.types.{WomBigDecimalType, WomBooleanType, WomIntegerType, WomType}
+import wom.values.{WomBigDecimal, WomBoolean, WomInteger, WomValue}
 
 /**
   * Checks that the draft3 value evaluators for ExpressionElements are wired to forward values through to the appropriate
@@ -28,6 +28,14 @@ class UnaryAndBinaryOperatorsEvaluatorSpec extends FlatSpec with Matchers{
 
   val womFive = WomInteger(5)
   val womSix = WomInteger(6)
+
+
+  val womBigDecimalTen = WomBigDecimal(10)
+  val womBigDecimalEleven = WomBigDecimal(11)
+  val womBigDecimalNine = WomBigDecimal(9)
+  val womBigDecimalOne = WomBigDecimal(1)
+  val tenBigDecimalLiteral = PrimitiveLiteralExpressionElement(womBigDecimalTen)
+  val oneBigDecimalLiteral = PrimitiveLiteralExpressionElement(womBigDecimalOne)
 
   // Format:
   // Test name, input expression, output value, output type.
@@ -58,7 +66,11 @@ class UnaryAndBinaryOperatorsEvaluatorSpec extends FlatSpec with Matchers{
     ("5 - 5", Subtract(fiveLiteral, fiveLiteral), WomInteger(0), WomIntegerType),
     ("5 * 5", Multiply(fiveLiteral, fiveLiteral), WomInteger(25), WomIntegerType),
     ("25 * 5", Divide(PrimitiveLiteralExpressionElement(WomInteger(25)), fiveLiteral), WomInteger(5), WomIntegerType),
-    ("27 % 5", Remainder(PrimitiveLiteralExpressionElement(WomInteger(27)), fiveLiteral), WomInteger(2), WomIntegerType)
+    ("27 % 5", Remainder(PrimitiveLiteralExpressionElement(WomInteger(27)), fiveLiteral), WomInteger(2), WomIntegerType),
+
+    ("10 + 1", Add(tenBigDecimalLiteral, oneBigDecimalLiteral), womBigDecimalEleven, WomBigDecimalType),
+    ("10 * 1", Multiply(tenBigDecimalLiteral, oneBigDecimalLiteral), womBigDecimalTen, WomBigDecimalType),
+    ("10 - 1", Subtract(tenBigDecimalLiteral, oneBigDecimalLiteral), womBigDecimalNine, WomBigDecimalType)
   )
 
   expressionTests foreach { case (name, expression, expectedValue, expectedType) =>
