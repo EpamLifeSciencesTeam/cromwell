@@ -11,7 +11,9 @@ import wom.format.MemorySize
 
 object MachineConstraints {
   implicit class EnhancedInformation(val information: MemorySize) extends AnyVal {
-    def asMultipleOf(factor: MemorySize): MemorySize = MemorySize(factor.amount * (information.bytes / factor.bytes).ceil, factor.unit)
+    import BigDecimal.RoundingMode.CEILING
+    def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
+    def asMultipleOf(factor: MemorySize): MemorySize = MemorySize(factor.amount * ceil(information.bytes / factor.bytes), factor.unit)
     def toMBString = information.to(MemoryUnit.MB).toString
   }
 
@@ -37,7 +39,9 @@ object MachineConstraints {
 
     lazy val adjustedMemory = MemorySize(minMemoryPerCpu.amount * cpu.toDouble, minMemoryPerCpu.unit) |> validateMemory
 
-    lazy val adjustedCpu = refineV[Positive]((memory.bytes / maxMemoryPerCpu.bytes).ceil.toInt) match {
+    import BigDecimal.RoundingMode.CEILING
+    def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
+    lazy val adjustedCpu = refineV[Positive](ceil(memory.bytes / maxMemoryPerCpu.bytes).toInt) match {
       // If for some reason the above yields 0, keep the cpu value unchanged 
       case Left(_) => cpu
       case Right(adjusted) => validateCpu(adjusted)
