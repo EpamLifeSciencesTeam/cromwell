@@ -14,7 +14,6 @@ case class TypeCastMismatch(message: String) extends Exception(message)
 
 object MachineConstraints {
   implicit class EnhancedInformation(val information: MemorySize) extends AnyVal {
-    import scala.math.BigDecimal._
     //TODO Add Validation too big
     def ceil(a: BigDecimal): Double = {
       if (a.isDecimalDouble) a.setScale(0, CEILING).doubleValue
