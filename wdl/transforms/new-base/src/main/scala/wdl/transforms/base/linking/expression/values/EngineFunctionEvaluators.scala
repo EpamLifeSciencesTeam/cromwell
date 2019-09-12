@@ -448,8 +448,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { float =>
-        EvaluatedValue(WomInteger(math.floor(float.value).toInt), Seq.empty).validNel
+      import BigDecimal.RoundingMode.FLOOR
+      def floor(a: BigDecimal): BigDecimal = a.setScale(0, FLOOR)
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bidDecimal =>
+        EvaluatedValue(WomInteger(floor(bidDecimal.value).toInt), Seq.empty).validNel
       }
     }
   }
@@ -460,8 +462,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { float =>
-        EvaluatedValue(WomInteger(math.ceil(float.value).toInt), Seq.empty).validNel
+      import BigDecimal.RoundingMode.CEILING
+      def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
+        EvaluatedValue(WomInteger(ceil(bigDecimal.value).toInt), Seq.empty).validNel
       }
     }
   }
@@ -472,8 +476,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { float =>
-        EvaluatedValue(WomInteger(math.round(float.value).toInt), Seq.empty).validNel
+      import BigDecimal.RoundingMode.HALF_UP
+      def round(a: BigDecimal): BigDecimal = a.setScale(0, HALF_UP)
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
+        EvaluatedValue(WomInteger(round(bigDecimal.value).toInt), Seq.empty).validNel
       }
     }
   }

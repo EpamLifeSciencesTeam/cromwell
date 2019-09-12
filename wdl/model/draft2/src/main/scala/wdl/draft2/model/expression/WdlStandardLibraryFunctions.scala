@@ -129,15 +129,21 @@ trait WdlStandardLibraryFunctions extends WdlFunctions[WomValue] {
   }
 
   def floor(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-    extractSingleArgument("floor", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(Math.floor(f.asInstanceOf[WomFloat].value).toInt) }
+    import BigDecimal.RoundingMode.FLOOR
+    def floor(a: BigDecimal): BigDecimal = a.setScale(0, FLOOR)
+    extractSingleArgument("floor", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(floor(f.asInstanceOf[WomFloat].value).toInt) }
   }
 
   def round(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-    extractSingleArgument("round", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(Math.round(f.asInstanceOf[WomFloat].value).toInt) }
+    import BigDecimal.RoundingMode.HALF_UP
+    def round(a: BigDecimal): BigDecimal = a.setScale(0, HALF_UP)
+    extractSingleArgument("round", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(round(f.asInstanceOf[WomFloat].value).toInt) }
   }
 
   def ceil(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-    extractSingleArgument("ceil", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(Math.ceil(f.asInstanceOf[WomFloat].value).toInt) }
+    import BigDecimal.RoundingMode.CEILING
+    def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
+    extractSingleArgument("ceil", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(ceil(f.asInstanceOf[WomFloat].value).toInt) }
   }
 
   def transpose(params: Seq[Try[WomValue]]): Try[WomArray] = {
@@ -332,7 +338,7 @@ object WdlStandardLibraryFunctions {
         }
 
         // Inner function: get the file size and convert into the requested memory unit
-        def fileSize(womValue: Try[WomValue], convertTo: Try[MemoryUnit] = Success(MemoryUnit.Bytes)): Try[Double] = {
+        def fileSize(womValue: Try[WomValue], convertTo: Try[MemoryUnit] = Success(MemoryUnit.Bytes)): Try[BigDecimal] = {
           for {
             value <- womValue
             unit <- convertTo

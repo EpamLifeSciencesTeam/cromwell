@@ -52,12 +52,12 @@ class MemoryDeclarationValidation(declaration: Declaration, attributeName: Strin
     val memorySize = MemorySize(amount, declarationMemoryUnit)
     validation.withDefault(WomLong(memorySize.bytes.toLong))
   }
-
+   //TODO add validation
   private def defaultAmount(womValue: WomValue): Double = {
     womValue match {
       case WomInteger(value) => value.toDouble
       case WomLong(value) => value.toDouble
-      case WomFloat(value) => value
+      case WomFloat(value) => value.doubleValue()
       case WomOptionalValue(_, Some(optionalWdlValue)) => defaultAmount(optionalWdlValue)
       case other => throw new RuntimeException(s"Unsupported memory default: $other")
     }
