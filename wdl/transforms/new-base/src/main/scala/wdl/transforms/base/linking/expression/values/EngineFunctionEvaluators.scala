@@ -24,6 +24,7 @@ import wdl.model.draft3.elements.ExpressionElement
 import wdl.shared.FileSizeLimitationConfig
 import wdl.shared.model.expression.ValueEvaluation
 import wom.CommandSetupSideEffectFile
+import BigDecimal.RoundingMode.{CEILING, HALF_UP}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -243,7 +244,7 @@ object EngineFunctionEvaluators {
         } yield written
 
         tryResult.map(v => EvaluatedValue(v, Seq(CommandSetupSideEffectFile(v)))).toErrorOr.contextualizeErrors(s"""$functionName(...)""")
-      } (coercer = WomArrayType(WomStringType))
+      }(coercer = WomArrayType(WomStringType))
     }
   }
 
@@ -262,7 +263,7 @@ object EngineFunctionEvaluators {
         } yield written
 
         tryResult.map(v => EvaluatedValue(v, Seq(CommandSetupSideEffectFile(v)))).toErrorOr.contextualizeErrors(s"""$functionName(...)""")
-      } (coercer = WomArrayType(WomAnyType))
+      }(coercer = WomArrayType(WomAnyType))
     }
   }
 
@@ -462,10 +463,8 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      import BigDecimal.RoundingMode.CEILING
-      def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
       processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
-        EvaluatedValue(WomInteger(ceil(bigDecimal.value).toInt), Seq.empty).validNel
+        EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, CEILING).toInt), Seq.empty).validNel
       }
     }
   }
@@ -476,10 +475,8 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      import BigDecimal.RoundingMode.HALF_UP
-      def round(a: BigDecimal): BigDecimal = a.setScale(0, HALF_UP)
       processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
-        EvaluatedValue(WomInteger(round(bigDecimal.value).toInt), Seq.empty).validNel
+        EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, HALF_UP).toIntExact), Seq.empty).validNel
       }
     }
   }

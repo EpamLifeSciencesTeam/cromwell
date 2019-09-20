@@ -8,18 +8,11 @@ import mouse.all._
 import org.slf4j.Logger
 import wdl4s.parser.MemoryUnit
 import wom.format.MemorySize
-import scala.math.BigDecimal.RoundingMode.CEILING
-
-case class TypeCastMismatch(message: String) extends Exception(message)
 
 object MachineConstraints {
   implicit class EnhancedInformation(val information: MemorySize) extends AnyVal {
-    def ceil(a: BigDecimal): Double = {
-      if (a.isDecimalDouble) a.setScale(0, CEILING).doubleValue
-      else throw TypeCastMismatch("Can not allocate memory")
-    }
-
-    def asMultipleOf(factor: MemorySize): MemorySize = MemorySize(factor.amount * ceil(information.bytes / factor.bytes), factor.unit)
+    def asMultipleOf(factor: MemorySize): MemorySize =
+      MemorySize(factor.amount * (information.bytes / factor.bytes).ceil, factor.unit)
     def toMBString = information.to(MemoryUnit.MB).toString
   }
 

@@ -39,7 +39,7 @@ class CwlEcmaScriptDecoder {
       case double: java.lang.Double if double == double.doubleValue.floor && !double.isInfinite =>
         WomInteger(double.intValue).valid
       case double: java.lang.Double => WomFloat(BigDecimal(double)).valid
-      case bigDecimal: java.math.BigDecimal => WomFloat(bigDecimal).valid
+      case bigDecimal: scala.math.BigDecimal => WomFloat(bigDecimal).valid
       case boolean: java.lang.Boolean => WomBoolean(boolean).valid
       case unknown => s"While decoding the output $value of the Javascript interpreter, we encountered $unknown and were unable to reify it.".invalidNel
     }

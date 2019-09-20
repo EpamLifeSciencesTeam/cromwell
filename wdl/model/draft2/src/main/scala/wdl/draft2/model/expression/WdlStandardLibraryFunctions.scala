@@ -130,19 +130,21 @@ trait WdlStandardLibraryFunctions extends WdlFunctions[WomValue] {
   }
 
   def floor(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-    def floor(a: BigDecimal): BigDecimal = a.setScale(0, FLOOR)
-    extractSingleArgument("floor", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(floor(f.asInstanceOf[WomFloat].value).toInt) }
+    extractSingleArgument("floor", params)
+      .flatMap { f => WomFloatType.coerceRawValue(f) }
+      .map { f => WomInteger(f.asInstanceOf[WomFloat].value.setScale(0, FLOOR).toIntExact) }
   }
 
   def round(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-    def round(a: BigDecimal): BigDecimal = a.setScale(0, HALF_UP)
-    extractSingleArgument("round", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(round(f.asInstanceOf[WomFloat].value).toInt) }
+    extractSingleArgument("round", params)
+     .flatMap { f => WomFloatType.coerceRawValue(f) }
+     .map { f => WomInteger(f.asInstanceOf[WomFloat].value.setScale(0, HALF_UP).toIntExact) }
   }
 
   def ceil(params: Seq[Try[WomValue]]): Try[WomInteger] = {
-
-    def ceil(a: BigDecimal): BigDecimal = a.setScale(0, CEILING)
-    extractSingleArgument("ceil", params) flatMap { f => WomFloatType.coerceRawValue(f) } map { f => WomInteger(ceil(f.asInstanceOf[WomFloat].value).toInt) }
+    extractSingleArgument("ceil", params)
+     .flatMap { f => WomFloatType.coerceRawValue(f) }
+     .map { f => WomInteger(f.asInstanceOf[WomFloat].value.setScale(0, CEILING).toIntExact) }
   }
 
   def transpose(params: Seq[Try[WomValue]]): Try[WomArray] = {
