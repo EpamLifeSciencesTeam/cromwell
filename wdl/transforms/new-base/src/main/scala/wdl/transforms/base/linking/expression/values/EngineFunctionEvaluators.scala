@@ -24,7 +24,7 @@ import wdl.model.draft3.elements.ExpressionElement
 import wdl.shared.FileSizeLimitationConfig
 import wdl.shared.model.expression.ValueEvaluation
 import wom.CommandSetupSideEffectFile
-import BigDecimal.RoundingMode.{CEILING, HALF_UP}
+import BigDecimal.RoundingMode.{CEILING, HALF_UP, FLOOR}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -244,7 +244,7 @@ object EngineFunctionEvaluators {
         } yield written
 
         tryResult.map(v => EvaluatedValue(v, Seq(CommandSetupSideEffectFile(v)))).toErrorOr.contextualizeErrors(s"""$functionName(...)""")
-      }(coercer = WomArrayType(WomStringType))
+      } (coercer = WomArrayType(WomStringType))
     }
   }
 
@@ -263,7 +263,7 @@ object EngineFunctionEvaluators {
         } yield written
 
         tryResult.map(v => EvaluatedValue(v, Seq(CommandSetupSideEffectFile(v)))).toErrorOr.contextualizeErrors(s"""$functionName(...)""")
-      }(coercer = WomArrayType(WomAnyType))
+      } (coercer = WomArrayType(WomAnyType))
     }
   }
 
@@ -449,10 +449,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      import BigDecimal.RoundingMode.FLOOR
-      def floor(a: BigDecimal): BigDecimal = a.setScale(0, FLOOR)
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bidDecimal =>
-        EvaluatedValue(WomInteger(floor(bidDecimal.value).toInt), Seq.empty).validNel
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs,
+                                                                              ioFunctionSet,
+                                                                              forCommandInstantiationOptions)) {
+        bidDecimal => EvaluatedValue(WomInteger(bidDecimal.value.setScale(0, FLOOR).toIntExact), Seq.empty).validNel
       }
     }
   }
@@ -463,8 +463,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
-        EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, CEILING).toInt), Seq.empty).validNel
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs,
+                                                                              ioFunctionSet,
+                                                                              forCommandInstantiationOptions)) {
+        bigDecimal => EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, CEILING).toIntExact), Seq.empty).validNel
       }
     }
   }
@@ -475,8 +477,10 @@ object EngineFunctionEvaluators {
                                ioFunctionSet: IoFunctionSet,
                                forCommandInstantiationOptions: Option[ForCommandInstantiationOptions])
                               (implicit expressionValueEvaluator: ValueEvaluator[ExpressionElement]): ErrorOr[EvaluatedValue[WomInteger]] = {
-      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs, ioFunctionSet, forCommandInstantiationOptions)) { bigDecimal =>
-        EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, HALF_UP).toIntExact), Seq.empty).validNel
+      processValidatedSingleValue[WomFloat, WomInteger](a.param.evaluateValue(inputs,
+                                                                              ioFunctionSet,
+                                                                              forCommandInstantiationOptions)) {
+        bigDecimal => EvaluatedValue(WomInteger(bigDecimal.value.setScale(0, HALF_UP).toIntExact), Seq.empty).validNel
       }
     }
   }
