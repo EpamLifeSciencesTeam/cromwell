@@ -68,3 +68,26 @@ jq '{
 
 cmp <(jq -cS . actual.json) <(jq -cS . expected.json)
 popd > /dev/null
+
+# Test 3: run simple cwl
+STANDARD_TEST_CASES="$PWD/centaur/src/main/resources/standardTestCases/cwl_run"
+pushd "$STANDARD_TEST_CASES" > /dev/null
+
+java -jar ${CROMWELL_BUILD_CROMWELL_JAR} run ./1st-tool.cwl --inputs ./echo-job.yml --metadata-output ./run_mode_metadata.json | tee console_output.txt
+
+cat > expected.json <<FIN
+{
+  "actualWorkflowLanguage": "CWL",
+  "actualWorkflowLanguageVersion": "v1.0",
+  "status": "Succeeded"
+}
+FIN
+
+jq '{
+  actualWorkflowLanguage,
+  actualWorkflowLanguageVersion,
+  status
+}' run_mode_metadata.json > actual.json
+
+cmp <(jq -cS . actual.json) <(jq -cS . expected.json)
+popd > /dev/null
